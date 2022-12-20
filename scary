@@ -1,0 +1,63 @@
+.model flat, C
+.data
+	extrn C res:dword
+	extrn C x:dword
+	storage dword 1.0
+	t1 dword ?
+	t2 dword ?
+.code
+public C t_one
+t_one proc far
+	fld x
+	fmul x			;x^2
+	fadd storage	;x^2 + 1
+	fsqrt			;sqrt(x^2+1)
+	fsin			;sin(sqrt(x^2+1))
+	fmul x			;x*sin(sqrt(x^2+1))
+	fstp t1		;x*sin(sqrt(x^2+1)) в t1
+	fld1			;1 в st(0)
+	fld t1		;t1 в st(0)
+	fprem			;нахождение дробной части
+	f2xm1			;степень двойки для дробной части
+	fadd storage	;прибавление 1, так как она вычитается
+	fstp t2		;степень двойки для дробной части в t2
+	fld	t1		;возврат изначального значения в st(0)
+	fld1		;1 в st(0)
+	fscale		;результат умножения целой части в st(0)
+	fmul t2
+	fsub storage	;вычитается 1
+	fst t1			;числитель в t1
+	fld x
+	fsincos			;синус и косинус
+	fmul			;косинус умножается на синус
+	fst t2			;произведение косинуса на синус в t2
+	fld x			;x в st(0)
+	fmul x			;x^2
+	fadd storage	;x^2 + 1
+	fsqrt			;sqrt(x^2+1)
+	fld1			;1 для того, чтобы не было множителя
+	fxch st(1)		;sqrt(x^2+1) и 1 меняются местами
+	fyl2x			;вычисление логарифма
+	fmul t2			;знаменатель
+	fdivr t1		;вычисление дроби
+	fstp	t1			;дробь в t1
+	;До этой части всё вычисляется правильно
+	fld1			;1 в st(0)
+	fld x			;x в st(0), 1 в st(1)
+	fprem			;нахождение дробной части
+	f2xm1			;степень двойки для дробной части
+	fadd storage	;прибавление 1, так как она вычитается
+	fstp t2			;дробная часть в t2
+	fld	x			;x в st(0)
+	fld1		;1 в st(0)
+	fscale		;результат умножения целой части в st(0)
+	fmul t2		;нахождение значения, находится в st(0)
+	fsqrt		;корень 2^x
+	fld1		;добавление единицы
+	fpatan		;вычисление арктангенса
+	fsubr t1	;арктангенс вычитается из ранее найденной дроби
+	fst res
+	retn
+t_one endp
+t_two
+end
