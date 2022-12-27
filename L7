@@ -1,0 +1,80 @@
+include fwrk.asm
+include swrk.asm
+include input.asm
+.model small
+.stack 100h
+.data
+    line1 db "Input number of symbols>> $"
+    line2 db "Input symbols>> $"
+    line3 db "result:$"
+    FileName db "tdoc.txt", "$" 
+    FDescr dw ? ;ячейка для хранения дескриптора
+    NewFile db "tdoc2.txt", "$"
+    FDescrNew dw ? ;дескриптор нового файла
+    String db 127 dup(0) ;буфер для хранения строки
+    New_string db 127 dup(0), "$"
+    Swapped db 127 dup(0), "$"
+    index dw ?
+    nextline dw ?
+    asize dw 127
+    nlsign db 0Ah
+.code
+start:
+    mov ax, @data
+    mov ds, ax
+    cls 1Eh
+    setpos 0, 0
+    pline line1
+    f_openr FileName, FDescr ;открытие файла для чтения
+    f_read FDescr String     ;запись файла в строку
+    ;строка находится в String
+    miltin 3
+    mov di, offset Swapped
+    setpos 1, 0
+    pline line2
+    mov cx, ax
+    inpstr:
+        mov ah, 01h
+        int 21h
+        mov [di], al
+        inc di
+    loop inpstr             ;ввод строки в Swapped
+    mov ax, 00Ah
+    mov cx, 127
+    mov si, 0
+    mov nextline, offset String
+    fnline:
+        cmp String[si], al
+            je lfound
+            jmp mon
+                lfound:
+                add nextline, si          ;Сохранение адреса перехода
+                jmp nlfound
+        mon:
+        inc si
+    loop fnline
+    nlfound:
+    f_create NewFile, FDescrNew ;создание этого файла
+    ;запись в файл
+    f_write FDescrNew, Swapped ;введёная строка в файл
+    mov si, nextline        ;получение смещения
+    sub asize, si           ;
+    mov cx, asize
+    mov di, offset New_string
+    cld
+    rep movsb               ;цепочечная команда для перемещения символов из ds регистра одной строки в es регистр друой
+    tods New_string[0], asize       ;перемещение из es в ds
+    f_write FDescrNew, New_string
+    ;закрытие файлов
+    f_close FDescr
+    f_close FDescrNew
+    setpos 3, 0
+    pline line3
+    setpos 4, 0
+    pline Swapped
+    setpos 4, 0
+    pline New_string
+    mov ax, 4c00h
+    int 21h
+end start
+end
